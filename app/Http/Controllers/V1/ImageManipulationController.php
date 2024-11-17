@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\File;
 use App\Http\Requests\ResizeImageRequest;
+use App\Http\Resources\V1\ImageManipulationResource;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 
@@ -20,13 +21,13 @@ class ImageManipulationController extends Controller
      */
     public function index()
     {
-        //
+        return ImageManipulationResource::collection(ImageManipulation::paginate());
     }
 
 
     public function byAlbum(Album $album)
     {
-
+        return ImageManipulationResource::collection(ImageManipulation::where('album_id', $album->id));
     }
 
     /**
@@ -91,7 +92,7 @@ class ImageManipulationController extends Controller
 
         $imageManipulation = ImageManipulation::create($data);
 
-        return $imageManipulation;
+        return new ImageManipulationResource($imageManipulation);
 
 
     }
@@ -99,18 +100,19 @@ class ImageManipulationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(ImageManipulation $imageManipulation)
+    public function show(ImageManipulation $image)
     {
-        //
+        return new ImageManipulationResource($image);
     }
 
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(ImageManipulation $imageManipulation)
+    public function destroy(ImageManipulation $image)
     {
-        //
+        $image->delete();
+        return response("", 204);
     }
 
 
