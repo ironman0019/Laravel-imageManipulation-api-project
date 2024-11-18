@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\File;
 use App\Http\Requests\ResizeImageRequest;
 use App\Http\Resources\V1\ImageManipulationResource;
+use Illuminate\Support\Facades\Auth;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 
@@ -21,13 +22,17 @@ class ImageManipulationController extends Controller
      */
     public function index()
     {
-        return ImageManipulationResource::collection(ImageManipulation::paginate());
+        return ImageManipulationResource::collection(ImageManipulation::where('user_id', Auth::user()->id)->paginate());
     }
 
 
     public function byAlbum(Album $album)
     {
-        return ImageManipulationResource::collection(ImageManipulation::where('album_id', $album->id));
+        if(Auth::user()->id != $album->user_id) {
+            return abort(403, "unauthorized");
+        }
+
+        return ImageManipulationResource::collection(ImageManipulation::where('album_id', $album->id)->paginate());
     }
 
     /**
@@ -44,11 +49,14 @@ class ImageManipulationController extends Controller
         $data = [
             'type' => ImageManipulation::TYPE_RESIZE,
             'data' => json_encode($all),
-            'user_id' => null
+            'user_id' => Auth::user()->id
         ];
 
         if(isset($all['album_id'])) {
-            // TODO
+            $album = Album::find($all['album_id']);
+            if(Auth::user()->id != $album->user_id) {
+                return abort(403, "unauthorized");
+            }
 
             $data['album_id'] = $all['album_id'];
         }
@@ -102,6 +110,10 @@ class ImageManipulationController extends Controller
      */
     public function show(ImageManipulation $image)
     {
+        if(Auth::user()->id != $image->user_id) {
+            return abort(403, "unauthorized");
+        }
+
         return new ImageManipulationResource($image);
     }
 
@@ -111,6 +123,10 @@ class ImageManipulationController extends Controller
      */
     public function destroy(ImageManipulation $image)
     {
+        if(Auth::user()->id != $image->user_id) {
+            return abort(403, "unauthorized");
+        }
+
         $image->delete();
         return response("", 204);
     }
